@@ -21,7 +21,7 @@ import (
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-
+	fmt.Println("CyberStorm v 0.1b b1g-d0g")
 	// Stampa una frase casuale
 	core.PrintRandomPhrase()
 
