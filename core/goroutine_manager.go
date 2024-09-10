@@ -2,20 +2,19 @@ package core
 
 import (
 	"context"
-	"log"
 	"sync"
 )
 
-// RunGoroutines esegue un numero di goroutine in base al profilo scelto
+// RunGoroutines esegue le goroutine in base al profilo scelto
 func RunGoroutines(wg *sync.WaitGroup, ctx context.Context, profile string, attackFunc func(), duration int) {
-	numGoroutines := getNumGoroutines(profile)
+	numGoroutines := getProfileGoroutines(profile)
 
-	log.Printf("Starting attack with %d goroutines for %d seconds\n", numGoroutines, duration)
-
-	for i := 0; numGoroutines > i; i++ {
+	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+
+			// Esegui l'attacco finché il contesto non è cancellato
 			for {
 				select {
 				case <-ctx.Done():
@@ -28,15 +27,15 @@ func RunGoroutines(wg *sync.WaitGroup, ctx context.Context, profile string, atta
 	}
 }
 
-// getNumGoroutines restituisce il numero di goroutine in base al profilo selezionato
-func getNumGoroutines(profile string) int {
+// getProfileGoroutines restituisce il numero di goroutine in base al profilo
+func getProfileGoroutines(profile string) int {
 	switch profile {
 	case "light":
 		return 10
 	case "medium":
 		return 50
 	case "extreme":
-		return 200
+		return 100
 	default:
 		return 50
 	}

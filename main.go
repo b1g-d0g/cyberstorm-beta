@@ -69,7 +69,7 @@ func main() {
 		}
 		defer rawSocket.Close()
 
-		// Avvia l'attacco ICMP flood
+		// Crea un contesto con timeout
 		wg := &sync.WaitGroup{}
 		ctx, cancelFunc := context.WithTimeout(context.Background(), time.Duration(*duration)*time.Second)
 
@@ -80,7 +80,7 @@ func main() {
 			}
 		}
 
-		// Esegui le goroutine con il profilo selezionato
+		// Aggiungi il parametro duration alla chiamata a RunGoroutines
 		core.RunGoroutines(wg, ctx, *profile, attackFunc, *duration)
 
 		log.Println("press ^C to stop")
@@ -169,7 +169,7 @@ func main() {
 		log.Fatalf("Unsupported attack type: %s", *attack)
 	}
 
-	// Esegui le goroutine in base al profilo scelto
+	// Aggiungi il parametro duration alla chiamata a RunGoroutines
 	core.RunGoroutines(wg, ctx, *profile, attackFunc, *duration)
 
 	log.Println("press ^C to stop")
