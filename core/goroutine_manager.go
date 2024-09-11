@@ -31,7 +31,7 @@ func RunGoroutines(wg *sync.WaitGroup, ctx context.Context, profile string, atta
 func getProfileGoroutines(profile string) int {
 	switch profile {
 	case "light":
-		return 10
+		return 15
 	case "medium":
 		return 50
 	case "extreme":
