@@ -12,6 +12,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"math/rand"
 
 	"cyberstorm/attacks"
 	"cyberstorm/core"
