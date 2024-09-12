@@ -8,18 +8,25 @@ import (
 	"time"
 )
 
-// RunGoroutines esegue le goroutine in base al profilo scelto e in proporzione al numero di CPU logiche disponibili
-func RunGoroutines(wg *sync.WaitGroup, ctx context.Context, profile string, attackFunc func(), duration int) {
+// RunGoroutines esegue le goroutine in base al profilo scelto, in proporzione al numero di CPU logiche disponibili
+// e con la possibilità di eseguire una modalità di test limitata
+func RunGoroutines(wg *sync.WaitGroup, ctx context.Context, profile string, attackFunc func(), duration int, testMode bool) {
 	numGoroutines := getProfileGoroutines(profile)
 
 	// Timer per la durata complessiva dell'attacco
 	timer := time.NewTimer(time.Duration(duration) * time.Second)
 
+	// Limite di pacchetti per goroutine in modalità test
+	const maxTestPackets = 5 // Limita il numero di pacchetti in modalità di test
+
 	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
-		go func(goroutineID int) { // Aggiungi un ID per tracciare la goroutine
+		go func(goroutineID int) {
 			defer wg.Done()
-			log.Printf("Goroutine %d iniziata\n", goroutineID) // Log di inizio goroutine
+			log.Printf("Goroutine %d iniziata\n", goroutineID)
+
+			// Contatore per il numero di pacchetti inviati in modalità test
+			packetCount := 0
 
 			for {
 				select {
@@ -31,10 +38,18 @@ func RunGoroutines(wg *sync.WaitGroup, ctx context.Context, profile string, atta
 					return
 				default:
 					attackFunc() // Esegui l'attacco
-					time.Sleep(10 * time.Millisecond) // Pausa breve
+
+					// Modalità test: Limita il numero di pacchetti inviati
+					if testMode {
+						packetCount++
+						if packetCount >= maxTestPackets {
+							log.Printf("Goroutine %d ha inviato il numero massimo di pacchetti in modalità test\n", goroutineID)
+							return
+						}
+					}
 				}
 			}
-		}(i) // Passa l'indice della goroutine
+		}(i)
 	}
 
 	// Aspetta che tutte le goroutine abbiano finito

